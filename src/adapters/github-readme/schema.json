@@ -1,0 +1,11 @@
+{
+  "format": "markdown",
+  "sections": {
+    "title": { "required": true },
+    "badges": { "required": false },
+    "description": { "required": true },
+    "installation": { "required": true },
+    "usage": { "required": true },
+    "license": { "required": false }
+  }
+}

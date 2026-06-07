@@ -1,0 +1,7 @@
+{
+  "format": "plain",
+  "maxLength": 3000,
+  "recommendedLength": 1300,
+  "hashtags": { "min": 3, "max": 5, "position": "end" },
+  "hook": { "firstNLines": 3, "note": "더보기 전에 노출되는 영역, 후킹 필수" }
+}
