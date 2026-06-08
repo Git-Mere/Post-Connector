@@ -1,8 +1,8 @@
-# PROJECT — Post Connector (현행 가이드)
+# PROJECT — Post Connector (현행 통합 가이드)
 
-> 이 문서는 원래 `CLAUDE.md`의 스펙과, 그 이후 실제로 내린 설계 결정들을 **통합한 현행 단일 가이드**입니다.
-> 충돌 시 이 문서가 우선합니다. `CLAUDE.md`는 초기 구상 기록으로 남겨둡니다.
-> 세션 단위 진행 상황/다음 할 일은 [HANDOFF.md](./HANDOFF.md) 참고.
+> 원래 `CLAUDE.md`의 스펙 + 이후 내린 설계 결정 + 세션 진행 상황을 **하나로 통합한 단일 문서**입니다.
+> 충돌 시 이 문서가 우선. `CLAUDE.md`는 초기 구상 기록으로만 남겨둡니다.
+> 마지막 업데이트: 2026-06-07
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## 2. ⭐ 확정된 설계 결정 (초기 CLAUDE.md에서 변경된 부분)
 
-이 프로젝트는 초기 구상(멀티유저 SaaS)에서 **혼자 쓰는 로컬 도구**로 노선을 바꿨습니다. 그 결과:
+초기 구상(멀티유저 SaaS)에서 **혼자 쓰는 로컬 도구**로 노선을 변경. 그 결과:
 
 | 항목 | 초기 CLAUDE.md 구상 | **현행 결정** |
 |---|---|---|
@@ -123,7 +123,6 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 ### github-pages-portfolio 현행 사양
 - 대상: `Git-Mere/Git-Mere.github.io` `main`, 파일 `src/data/projects.ts`의 `projects` 배열에 객체 추가 (`config.json`에 정의).
 - AI 생성 필드: `title, tagline, description, tags[], imageAlt`. 코드가 채움: `githubUrl`(소스 레포), `liveUrl`(repo homepage 있으면), `image`(`/projects/placeholder.png`).
-- **⚠️ 사용자가 포트폴리오 구조를 변경 예정** → 바뀌면 config.json/schema.json/prompt-base.md + CLI 머지·포맷 로직 점검 (HANDOFF.md 참고).
 - 게시는 TS 소스 배열 텍스트 삽입 + PR.
 
 ---
@@ -151,3 +150,57 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 ## 11. 개발 팀 운영
 3역할: **디렉터**(Opus, 메인 세션) / **코더**(Sonnet) / **리뷰어**(Sonnet). 코더 작성 → 디렉터가 리뷰어 전달 → 이상 시 코더 반려, 통과 시 디렉터 보고.
+
+---
+
+# === 세션 인수인계 (다음 세션 시작점) ===
+
+## 12. 마지막 세션에서 한 일 (2026-06-07)
+
+1. 노선 확정(로컬 도구) + AI 구독 인증 전환 + `ai-generator.ts` 재작성.
+2. 프롬프트 조립 A안 통일, `generatePrompt()` 제거.
+3. CLI 신규(`pnpm generate <repo-url> [adapter-id]`).
+4. **github-readme 생성 end-to-end 동작 확인됨** (실제 레포로 README 출력 성공).
+5. **github-pages-portfolio 생성 슬라이스 완성** (리뷰 통과, TS 객체 리터럴 콘솔 출력). 이스케이프 버그 2건 수정.
+6. `.env.example` 정리(OAuth앱/Redis 변수 제거).
+
+## 13. 현재 상태
+
+| 항목 | 상태 |
+|---|---|
+| GitHub 수집 (`github-fetcher.ts`) | ✅ |
+| ai-generator (구독 query) | ✅ |
+| CLI `pnpm generate` | ✅ |
+| github-readme 생성 | ✅ 동작 확인 |
+| github-readme **게시(PR)** | ❌ 미구현 |
+| github-pages-portfolio 생성 | ✅ (리뷰 통과, **사용자 라이브 확인 전**) |
+| github-pages-portfolio **게시(PR)** | ❌ 미구현 |
+| 블로그 / LinkedIn / Handshake | ❌ 미착수 |
+| 보충 입력 수집 | ❌ CLI가 빈 `{}` 전달 |
+
+## 14. ⚠️ 다음 세션 주의 — 포트폴리오 구조 변경 예정
+사용자가 **포트폴리오 사이트 구성 자체를 변경할 예정**. 구조가 바뀌면 아래를 점검:
+`github-pages-portfolio/config.json` + `schema.json` + `prompt-base.md` + `src/cli.ts`의 머지·포맷 로직.
+
+## 15. 다음 할 일 (우선순위)
+1. **(사용자 대기) 포트폴리오 새 구조 확정** → config.json/schema/prompt-base 업데이트
+2. **포트폴리오 게시(2단계)** — `projects.ts` 배열에 TS 객체 삽입 + `Git-Mere.github.io`에 **PR**. (JSON 아닌 TS 소스라 텍스트 삽입 주의: 배열 닫는 `]` 앞 삽입 등)
+3. **README 게시(PR)** — 동일 Octokit PR 패턴 (덮어쓰기 금지, 새 브랜치+PR)
+4. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
+
+## 16. 실행 방법 (셋업)
+```bash
+claude setup-token            # 출력 토큰 → .env 의 CLAUDE_CODE_OAUTH_TOKEN
+# .env:
+#   CLAUDE_CODE_OAUTH_TOKEN=<토큰>
+#   GITHUB_TOKEN=<fine-grained PAT: Contents R/W, Pull requests R/W, Metadata R>
+#   ANTHROPIC_API_KEY 는 반드시 비워둘 것
+pnpm install
+pnpm generate https://github.com/<owner>/<repo>                        # README
+pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio  # 포트폴리오(콘솔 출력)
+pnpm typecheck
+```
+
+## 17. 남은 부채
+- `package.json`에 `bullmq`, `ioredis` 잔존(큐 안 씀 → 정리 가능). `src/core/publish-queue.ts`는 스텁 — BullMQ 안 쓰는 방향으로 재작성/제거 예정.
+- `src/api/server.ts`는 `/health`만 있는 스텁 (웹 UI 보류).
