@@ -1,286 +1,55 @@
-# CLAUDE.md
+# CLAUDE.md — 작업 지침
 
-> Guide for Claude Code when working on the Post Connector project.
-
-## Project Overview
-
-**Post Connector** is a tool that takes a single GitHub repository as input and uses AI to generate platform-specific content for multiple destinations (LinkedIn, GitHub Pages blog/portfolio, GitHub README, Handshake), auto-publishing where possible.
-
-**Core value**: Eliminate the repetitive work of writing project posts for multiple platforms after finishing a project.
+> 이 문서는 **Claude가 이 프로젝트에서 어떻게 일하는지**(팀 운영 방식)만 다룹니다.
+> 프로젝트 스펙·설계 결정·현재 상태·다음 할 일은 전부 **[PROJECT.md](./PROJECT.md)** 에 있습니다. 작업 시작 전 PROJECT.md를 먼저 읽으세요.
 
 ---
 
-## System Architecture
+## 팀 구성 — 3역할로 작업
+
+| 역할 | 담당 | 모델 |
+|---|---|---|
+| **디렉터** | 메인 세션 (이 대화) | Opus 4.8 |
+| **코더** | spawn 에이전트 | Sonnet |
+| **리뷰어** | spawn 에이전트 | Sonnet |
+
+### 디렉터 (메인 세션)
+- 사용자와 **함께 플랜을 정한다**. 모호하면 추측하지 말고 묻는다.
+- 작업을 명확한 단위로 쪼개 **코더에게 지시**한다.
+- 코더 결과를 **리뷰어에게 전달**하고, 리뷰어 보고를 받아 **사용자에게 보고**한다.
+- 실질적 코드 작업은 직접 하지 않고 코더에게 위임한다 (사소한 문서/메타 편집은 직접 가능).
+- 코더↔리뷰어 루프를 **중계**한다.
+
+### 코더 (Sonnet)
+- 디렉터가 준 작업만 구현한다. surgical하게, 요청 범위만. 과한 추상화 금지.
+- 작성 후 스스로 검증한다 (`pnpm typecheck` 등). 시크릿 없으면 라이브 런은 스킵하되 그 사실을 보고.
+- 끝나면 **변경 파일 목록 + 이유 + 검증 결과**를 디렉터에게 보고 (사용자에게 직접 보고 X).
+
+### 리뷰어 (Sonnet)
+- 코더 결과가 **올바르게 구현됐는지, 불필요한/죽은 코드는 없는지, 리소스가 잘 쓰였는지** 검사한다.
+- 실제 작업 트리를 직접 확인하고(`git diff`, 파일 읽기), `pnpm typecheck`도 직접 돌린다.
+- **이상 있으면** → 파일·줄·문제·수정안을 번호로 정리해 **코더에게 반려**.
+- **이상 없으면** → **APPROVED**로 디렉터에게 보고.
+
+---
+
+## 루프 운영 (디렉터가 오케스트레이션)
 
 ```
-GitHub Repo (SSOT)
-      ↓
-   Core Engine
-   - GitHub data collection
-   - User supplemental input
-   - AI generation orchestration
-      ↓
-   Platform Adapters (modular)
-      ↓
-   ├─ Auto-publish: GitHub README, GitHub Pages (blog/portfolio)
-   └─ Copy-paste mode: LinkedIn Post, Handshake Profile
+디렉터 ──지시──▶ 코더 ──작성/검증──▶ (디렉터가 전달) ──▶ 리뷰어
+   ▲                                                        │
+   │                          ┌──이상: 코더에게 반려────────┘
+   │                          ▼
+   └──────APPROVED 보고───── 통과
 ```
 
----
-
-## Core Design Principles
-
-1. **Modular adapter structure**: Adding a new platform should only require adding one adapter folder.
-2. **User customization first**: Format and tone are defined in `instructions.md` / `schema.json`, not in code.
-3. **GitHub as Single Source of Truth**: Project data always originates from the GitHub repo. No duplicate storage elsewhere.
-4. **Auto-publish only where reliable; copy-paste for the rest**: Do not force automation.
-5. **No premature abstraction**: Do not abstract until at least 2 adapters exist.
+- 코더/리뷰어는 **이름 붙인 에이전트**(`model: sonnet`)로 spawn.
+- 에이전트가 작업을 끝내 비활성이면, **`agentId`로 SendMessage**해서 컨텍스트 유지한 채 재개 (반려 수정 등).
+- 독립적인 작업이 여럿이면 한 메시지에서 동시 spawn.
 
 ---
 
-## Target Platforms (5)
-
-| Platform | Publish Mode | Auth |
-|----------|-------------|------|
-| GitHub README | Auto | GitHub OAuth |
-| GitHub Pages Blog | Auto (git push) | GitHub OAuth |
-| GitHub Pages Portfolio | Auto (git push) | GitHub OAuth |
-| LinkedIn Post | Copy-paste | None |
-| Handshake Profile | Copy-paste | None |
-
----
-
-## Tech Stack
-
-- **Language**: TypeScript (Node.js)
-- **Backend**: Fastify or Express
-- **Frontend**: Next.js + Tailwind
-- **Database**: PostgreSQL (Supabase) — users, publish history, supplemental input
-- **AI**: Anthropic Claude API (Sonnet preferred)
-- **GitHub Integration**: Octokit (official SDK), GraphQL preferred
-- **Job Queue**: BullMQ (Redis) — async publishing, retries
-
----
-
-## Folder Structure
-
-```
-/src
-  /core
-    - github-fetcher.ts       # GitHub API data collection
-    - ai-generator.ts         # Claude API calls, prompt assembly
-    - publish-queue.ts        # Publish queue management
-    - adapter-registry.ts     # Auto-loads adapters
-  
-  /adapters
-    global-instructions.md    # Shared user instructions across all adapters
-    
-    /github-readme
-      - adapter.ts
-      - schema.json
-      - instructions.md
-      - prompt-base.md
-    
-    /github-pages-blog
-      - adapter.ts
-      - schema.json
-      - instructions.md
-      - prompt-base.md
-      - config.json           # repo URL, file path rules
-    
-    /github-pages-portfolio
-      - adapter.ts
-      - schema.json
-      - instructions.md
-      - prompt-base.md
-      - config.json
-    
-    /linkedin-post
-      - adapter.ts
-      - schema.json
-      - instructions.md
-      - prompt-base.md
-    
-    /handshake-profile
-      - adapter.ts
-      - schema.json
-      - instructions.md
-      - prompt-base.md
-  
-  /api                        # REST endpoints
-  /web                        # Next.js UI
-```
-
----
-
-## Adapter Interface
-
-```typescript
-interface PlatformAdapter {
-  id: string;                          // "linkedin-post"
-  name: string;                        // "LinkedIn Post"
-  category: 'social' | 'blog' | 'portfolio' | 'job' | 'readme';
-  authType: 'oauth' | 'api-key' | 'manual';
-  
-  // Format definition (loaded from schema.json)
-  schema: AdapterSchema;
-  
-  // Prompt assembly
-  generatePrompt(data: ProjectData, userInstructions: string): string;
-  
-  // Output validation
-  validate(content: string): ValidationResult;
-  
-  // Publishing (omit if manual; implement only for auto)
-  publish?(content: string, auth: Auth): Promise<PublishResult>;
-}
-```
-
-**Rule**: If `publish` is not implemented, the UI automatically renders a "Copy to clipboard" mode.
-
----
-
-## Prompt Assembly Order
-
-```
-1. [System] prompt-base.md          (fixed system prompt per adapter)
-2. [Constraints] schema.json        (maxLength, format, etc.)
-3. [Global] global-instructions.md  (shared user instructions)
-4. [Adapter-specific] instructions.md (per-adapter user instructions) ← highest priority
-5. [Data] ProjectData               (GitHub data + supplemental input)
-```
-
-`instructions.md` must have the strongest influence. Place it near the end of the prompt.
-
----
-
-## GitHub Data to Collect
-
-- Raw README.md
-- `GET /repos/{owner}/{repo}/languages` (language breakdown)
-- Repo metadata (topics, description, stars, license, homepage URL)
-- Dependency files (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.)
-- Commit statistics (development span, activity)
-- Release notes (if available)
-- File tree (for architecture inference)
-
-**Prefer GraphQL API** to fetch everything in a single request.
-
----
-
-## User Supplemental Input (Required Step)
-
-GitHub data alone is insufficient. Before generation, prompt the user for the following (all optional):
-
-- Core problem solved
-- Impact metrics (users, performance gains, etc.)
-- Personal role (for team projects)
-- Lessons learned / challenges
-- Next steps / hooks
-
-Store supplemental input in the database for reuse on republishing.
-
----
-
-## Workflow
-
-```
-1. User enters a GitHub repo URL
-2. GitHub data is auto-collected
-3. Supplemental input form is shown (optional)
-4. User selects adapters to publish to (checkboxes)
-5. AI generates content per adapter (in parallel)
-6. User previews / edits results
-7. Publish
-   - Auto adapters: enqueued and executed
-   - Copy-paste adapters: clipboard copy button shown
-8. Publish history saved to database
-```
-
----
-
-## Per-Adapter Notes
-
-### GitHub README
-- **Do not overwrite** the existing README. Create a PR or a new branch so the user can compare/merge.
-- Recommend including badges, demo GIF, install/usage sections.
-
-### GitHub Pages Blog
-- File path: `_posts/YYYY-MM-DD-{slug}.md` (Jekyll convention, user-configurable)
-- Auto-generate front matter (title, date, tags, categories)
-- `config.json` defines repo, branch, and path rules
-
-### GitHub Pages Portfolio
-- Default approach: add an entry to a structured data file like `projects.json`.
-- Site structures vary — `config.json` must define file path + data schema.
-- Also support markdown file addition as an alternative.
-
-### LinkedIn Post
-- Recommended length ~1300 chars, max 3000
-- First 3 lines appear before the "See more" cutoff → strong hook required
-- 3–5 hashtags at the end
-- Plain text only (no markdown)
-
-### Handshake Profile
-- Structured fields (Title, Description, Skills, Link)
-- Short and direct tone
-- Optimized for recruiters scanning quickly
-
----
-
-## Auth / Security
-
-- GitHub: OAuth App to obtain user tokens (required for private repos)
-- Tokens must be encrypted at rest in the database
-- Claude API key stays in server environment variables, never exposed to clients
-- LinkedIn / Handshake require no auth (copy-paste)
-
----
-
-## Rate Limit / Cost Management
-
-- GitHub: 5,000 req/hour (authenticated) — cache aggressively
-- Claude API: enforce per-user daily call limits
-- Cache GitHub data for repeat generations on the same repo (5-minute TTL)
-
----
-
-## Build Priority
-
-**Phase 1 (MVP)**
-1. GitHub fetcher
-2. Adapter interface definition
-3. GitHub README adapter (simplest)
-4. LinkedIn Post adapter (copy-paste, no auth)
-5. Minimal UI (repo URL input → result display)
-
-**Phase 2**
-6. GitHub Pages Blog adapter + git push logic
-7. GitHub Pages Portfolio adapter (reuses push logic)
-8. Supplemental input UI
-9. Publish history / republishing
-
-**Phase 3**
-10. Handshake adapter
-11. `global-instructions.md` support
-12. Adapter management UI (users create/edit adapter folders directly)
-
----
-
-## Coding Rules
-
-- TypeScript strict mode
-- No inter-adapter dependencies (each adapter is self-contained)
-- Core calls adapters; adapters never call Core directly
-- All AI prompts live in files (no inline prompt strings in code)
-- Validate `schema.json` at runtime (e.g., with zod)
-
----
-
-## Prohibitions
-
-- Do not attempt LinkedIn auto-publishing (API review + ToS risk)
-- Do not attempt Handshake auto-publishing (no Public API)
-- Do not over-abstract before 2 adapters are built
-- Do not hardcode AI prompts in code (always use `.md` files)
-- Do not store user GitHub tokens in plaintext
+## 일반 원칙
+- 추측 금지 — API/버전/플래그/패키지명은 코드나 문서로 확인 후 단정 (불확실하면 claude-code-guide 등으로 검증).
+- 라이브 레포에 영향 주는 작업(PR/푸시)은 신중히. 깨진 출력이 사용자 실제 레포에 가지 않도록 생성→확인→게시 순서로.
+- 프로젝트 관련 판단이 필요하면 PROJECT.md를 근거로.
