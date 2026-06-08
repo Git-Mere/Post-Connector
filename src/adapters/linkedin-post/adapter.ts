@@ -1,4 +1,4 @@
-import type { PlatformAdapter, ProjectData, ValidationResult } from '../../types.js';
+import type { PlatformAdapter, ValidationResult } from '../../types.js';
 
 // LinkedIn 자동 발행 금지 (CLAUDE.md "금지 사항"): API 심사 + 약관 리스크.
 // publish() 를 정의하지 않음 → UI 가 자동으로 "클립보드 복사" 모드로 렌더링.
@@ -11,10 +11,6 @@ const adapter: PlatformAdapter = {
   schema: {
     format: 'plain',
     maxLength: 3000,
-  },
-
-  generatePrompt(_data: ProjectData, _userInstructions: string): string {
-    throw new Error('linkedin-post.generatePrompt: not implemented');
   },
 
   validate(_content: string): ValidationResult {

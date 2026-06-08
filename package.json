@@ -10,7 +10,8 @@
     "dev": "tsx watch src/api/server.ts",
     "build": "tsc",
     "start": "node dist/api/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx src/cli.ts"
   },
   "devEngines": {
     "packageManager": {
@@ -20,7 +21,7 @@
     }
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.98.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.168",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1",
     "bullmq": "^5.77.2",

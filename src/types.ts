@@ -50,7 +50,6 @@ export interface PlatformAdapter {
   category: AdapterCategory;
   authType: AuthType;
   schema: AdapterSchema;
-  generatePrompt(data: ProjectData, userInstructions: string): string;
   validate(content: string): ValidationResult;
   publish?(content: string, auth: Auth): Promise<PublishResult>;
 }
