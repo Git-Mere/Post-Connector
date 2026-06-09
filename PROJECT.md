@@ -2,7 +2,7 @@
 
 > 프로젝트 스펙 + 설계 결정 + 세션 진행 상황을 담은 **단일 프로젝트 문서**입니다.
 > Claude의 작업 방식(디렉터/코더/리뷰어 팀)은 **[CLAUDE.md](./CLAUDE.md)** 참고.
-> 마지막 업데이트: 2026-06-07
+> 마지막 업데이트: 2026-06-08
 
 ---
 
@@ -135,7 +135,10 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 → Post Connector는 레포 데이터로 **Featured 또는 Other Projects용 마크다운 1개**(frontmatter + 본문)를 생성해 PR로 추가하는 게 핵심 작업. (둘 중 어느 타입을 기본으로 할지는 다음 세션에서 결정.)
 
-**B. 1회성 개인 설정 (수동 — 자동 생성 대상 아님, 참고용 기록)**
+**B. 1회성 개인 설정 (Post Connector 범위 밖 — 대상 레포에서 직접 Claude로 작업)**
+
+> ⚠️ 방침(2026-06-08): hero/about/jobs 등 개인 프로필 섹션 수정은 **Post Connector가 하지 않는다.** 프로젝트별로 일반화하기 어렵고 1회성이라, 대상 레포(`git-mere.github.io`)에서 직접 Claude를 열어 작업하는 게 낫다고 판단. 지난 세션에 만든 `pnpm profile` 기능은 이 세션에서 **제거함**. (그 기능이 만든 PR #1 "Update profile sections"는 이미 main에 merge된 상태 — 머지된 내용은 추후 레포에서 직접 검토·수정.)
+
 
 | 영역 | 파일 | 수정 대상 |
 |---|---|---|
@@ -182,11 +185,10 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
    - CLI가 frontmatter+md 파일로 조립 (`content/featured/{name}/index.md` or `content/projects/{name}.md`)
    - `--featured` 플래그로 타입 선택. Featured: 커버 이미지·긴 설명 / Other: 1-2문장·showInProjects
 2. **포트폴리오 게시(PR) 구현** — `src/core/github-publisher.ts` 신규. git tree API로 단일 커밋 PR 생성. `adapter.ts`의 `publish()` 구현 완료.
-3. **`pnpm profile` 커맨드 신규** (`src/cli-profile.ts`) — `profile.json` 기반으로 hero.js·about.js·jobs 수정 PR 자동 생성.
-   - hero.js/about.js: string replacement(이름·tagline·CTA·skills) + AI 생성(intro단락·about단락)
-   - `profile.example.json` 루트에 생성
-   - **실제 PR 생성 확인**: `Git-Mere/git-mere.github.io` PR #1
-4. **`generateRaw()`** `ai-generator.ts`에 추가 — 짧은 서술 텍스트 생성용 (system/user 직접 전달).
+3. **프로필 수정 기능(`pnpm profile`) 제거** — 스코프 환원 결정에 따라 hero/about/jobs 패치 기능을 전부 제거.
+   - 삭제: `src/cli-profile.ts`, `profile.example.json`
+   - 수정: `package.json` profile 스크립트 제거, `ai-generator.ts`의 `generateRaw()` 제거(해당 기능 전용 함수)
+   - 이유: 개인 프로필 섹션은 일반화 어렵고 1회성 → 대상 레포에서 직접 Claude로 작업하는 방침으로 전환 (섹션 8-B 참조). 리뷰어 APPROVED, `pnpm typecheck` 통과.
 
 ## 13. 현재 상태
 
@@ -199,7 +201,7 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | github-readme **게시(PR)** | ❌ 미구현 |
 | github-pages-portfolio 생성 (Featured/Other) | ✅ |
 | github-pages-portfolio **게시(PR)** | ✅ 구현 완료 |
-| `pnpm profile` (hero/about/jobs PR) | ✅ 구현·테스트 완료 |
+| 프로필 섹션(hero/about/jobs) 수정 | ❌ 범위 밖 — 레포에서 직접 작업 (기능 제거됨) |
 | 블로그 / LinkedIn / Handshake | ❌ 미착수 |
 | 보충 입력 수집 | ❌ CLI가 빈 `{}` 전달 |
 
@@ -207,12 +209,11 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 사이트가 Gatsby 구조(Brittany Chiang v4 템플릿 기반)로 교체됨. 상세 구조는 **섹션 8의 "github-pages-portfolio 대상 사이트 구조"** 참조.
 
 ## 15. 다음 할 일 (우선순위)
-1. **PR #1 검토 및 string replacement 패턴 검증** — hero.js·about.js 패치가 실제 파일에 올바르게 적용됐는지 확인. 문제 있으면 `patchHeroJs` / `patchAboutJs` 수정.
-2. **7개 프로젝트 실제 실행** — `pnpm generate`로 각 레포 포트폴리오 항목 생성·PR
+1. **7개 프로젝트 실제 실행** — `pnpm generate`로 각 레포 포트폴리오 항목 생성·PR
    - Featured (--featured): `Settle-Up`, `Where-is-the-question`, `Moris-library` (레포명 확인 필요)
    - Other: `ladder-chess`, `solar-system`, `simple-graphic-project2`, `garam` (레포명 확인 필요)
-3. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR)
-4. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
+2. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR)
+3. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
 
 ## 16. 실행 방법 (셋업)
 ```bash
@@ -225,11 +226,9 @@ pnpm install
 pnpm generate https://github.com/<owner>/<repo>                          # README (stdout)
 pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio   # Other 포트폴리오 PR
 pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio --featured  # Featured PR
-pnpm profile profile.example.json                                        # 프로필 섹션 PR
 pnpm typecheck
 ```
 
 ## 17. 남은 부채
 - `package.json`에 `bullmq`, `ioredis` 잔존(큐 안 씀 → 정리 가능). `src/core/publish-queue.ts`는 스텁 — 제거 예정.
 - `src/api/server.ts`는 `/health`만 있는 스텁 (웹 UI 보류).
-- `patchHeroJs` / `patchAboutJs` string replacement 패턴이 hero.js·about.js 실제 현재 내용에 의존 — PR #1 검토 후 패턴 안정성 확인 필요.

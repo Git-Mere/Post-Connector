@@ -44,30 +44,6 @@ function buildUserMessage(opts: GenerateOptions): string {
   ].join('\n');
 }
 
-export async function generateRaw(opts: { system: string; user: string }): Promise<string> {
-  const model = process.env['ANTHROPIC_MODEL'] ?? DEFAULT_MODEL;
-
-  for await (const message of query({
-    prompt: opts.user,
-    options: {
-      model,
-      systemPrompt: opts.system,
-      maxTurns: 1,
-      allowedTools: [],
-      settingSources: [],
-    },
-  })) {
-    if (message.type === 'result' && message.subtype === 'success') {
-      return message.result;
-    }
-    if (message.type === 'result' && message.is_error) {
-      throw new Error(`Generation failed: ${message.subtype}`);
-    }
-  }
-
-  throw new Error('generateRaw: stream ended without a result message');
-}
-
 export async function generateContent(opts: GenerateOptions): Promise<string> {
   const model = process.env['ANTHROPIC_MODEL'] ?? DEFAULT_MODEL;
   const systemText = buildSystem(opts);
