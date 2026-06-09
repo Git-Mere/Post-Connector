@@ -3,9 +3,7 @@
   "outputNote": "Output must be a single JSON object — no prose, no markdown, no code fences.",
   "fields": {
     "title": { "type": "string", "required": true },
-    "tagline": { "type": "string", "required": true },
-    "description": { "type": "string", "required": true },
-    "tags": { "type": "string[]", "required": true },
-    "imageAlt": { "type": "string", "required": true }
+    "tech": { "type": "string[]", "required": true },
+    "description": { "type": "string", "required": true }
   }
 }

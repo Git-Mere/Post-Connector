@@ -1,4 +1,18 @@
 import type { PlatformAdapter, ValidationResult, Auth, PublishResult } from '../../types.js';
+import { createPR } from '../../core/github-publisher.js';
+
+const PORTFOLIO_OWNER = 'Git-Mere';
+const PORTFOLIO_REPO = 'Git-Mere.github.io';
+const PORTFOLIO_BASE = 'main';
+
+// Content passed to publish() must be JSON matching this shape.
+interface PublishPayload {
+  filePath: string;
+  markdown: string;
+  branch: string;
+  prTitle: string;
+  prBody: string;
+}
 
 const adapter: PlatformAdapter = {
   id: 'github-pages-portfolio',
@@ -10,7 +24,6 @@ const adapter: PlatformAdapter = {
   },
 
   validate(content: string): ValidationResult {
-    // Strip ```json fences defensively before parsing.
     const stripped = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     let parsed: unknown;
     try {
@@ -26,26 +39,50 @@ const adapter: PlatformAdapter = {
     const obj = parsed as Record<string, unknown>;
     const errors: string[] = [];
 
-    for (const key of ['title', 'tagline', 'description', 'imageAlt'] as const) {
+    for (const key of ['title', 'description'] as const) {
       if (typeof obj[key] !== 'string' || (obj[key] as string).trim() === '') {
         errors.push(`"${key}" must be a non-empty string`);
       }
     }
 
-    if (!Array.isArray(obj['tags'])) {
-      errors.push('"tags" must be an array');
-    } else if ((obj['tags'] as unknown[]).length === 0) {
-      errors.push('"tags" must be a non-empty array');
-    } else if (!(obj['tags'] as unknown[]).every((t) => typeof t === 'string')) {
-      errors.push('"tags" must be an array of strings');
+    if (!Array.isArray(obj['tech'])) {
+      errors.push('"tech" must be an array');
+    } else if ((obj['tech'] as unknown[]).length === 0) {
+      errors.push('"tech" must be a non-empty array');
+    } else if (!(obj['tech'] as unknown[]).every((t) => typeof t === 'string')) {
+      errors.push('"tech" must be an array of strings');
     }
 
     return errors.length > 0 ? { ok: false, errors } : { ok: true, errors: [] };
   },
 
-  // Publishing (git push to portfolio repo) is implemented in the next task.
-  async publish(_content: string, _auth: Auth): Promise<PublishResult> {
-    throw new Error('github-pages-portfolio.publish: not implemented');
+  async publish(content: string, auth: Auth): Promise<PublishResult> {
+    if (auth.type !== 'oauth') {
+      return { ok: false, error: 'github-pages-portfolio requires oauth auth type' };
+    }
+
+    let payload: PublishPayload;
+    try {
+      payload = JSON.parse(content) as PublishPayload;
+    } catch {
+      return { ok: false, error: 'publish content must be a valid JSON PublishPayload' };
+    }
+
+    try {
+      const prUrl = await createPR({
+        token: auth.token,
+        owner: PORTFOLIO_OWNER,
+        repo: PORTFOLIO_REPO,
+        branch: payload.branch,
+        baseBranch: PORTFOLIO_BASE,
+        title: payload.prTitle,
+        body: payload.prBody,
+        files: [{ path: payload.filePath, content: payload.markdown }],
+      });
+      return { ok: true, url: prUrl };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
   },
 };
 

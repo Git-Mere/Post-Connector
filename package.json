@@ -11,7 +11,8 @@
     "build": "tsc",
     "start": "node dist/api/server.js",
     "typecheck": "tsc --noEmit",
-    "generate": "tsx src/cli.ts"
+    "generate": "tsx src/cli.ts",
+    "profile": "tsx src/cli-profile.ts"
   },
   "devEngines": {
     "packageManager": {

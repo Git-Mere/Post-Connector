@@ -115,15 +115,35 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | 플랫폼 | 게시 | 상태 |
 |---|---|---|
 | GitHub README | 자동 (PR/새 브랜치, **덮어쓰기 금지**) | 생성 ✅ / 게시 ❌ |
-| GitHub Pages 포트폴리오 | 자동 (PR) | 생성 ✅ / 게시 ❌ |
+| GitHub Pages 포트폴리오 | 자동 (PR) | ⚠️ 사이트 구조 교체됨 → 어댑터 재작성 필요 (아래 참조) |
 | GitHub Pages 블로그 | 자동 (push) — Jekyll `_posts/YYYY-MM-DD-slug.md` | 미착수 |
 | LinkedIn | 복붙 (~1300자, 해시태그, 플레인텍스트) | 미착수 |
 | Handshake | 복붙 (제목/설명/스킬/링크) | 미착수 |
 
-### github-pages-portfolio 현행 사양
-- 대상: `Git-Mere/Git-Mere.github.io` `main`, 파일 `src/data/projects.ts`의 `projects` 배열에 객체 추가 (`config.json`에 정의).
-- AI 생성 필드: `title, tagline, description, tags[], imageAlt`. 코드가 채움: `githubUrl`(소스 레포), `liveUrl`(repo homepage 있으면), `image`(`/projects/placeholder.png`).
-- 게시는 TS 소스 배열 텍스트 삽입 + PR.
+### github-pages-portfolio 대상 사이트 구조 (2026-06-07 변경됨)
+
+> ⚠️ 포트폴리오 사이트가 **Gatsby 기반 구조**(Brittany Chiang v4 템플릿 기반)로 교체됨. 기존 `src/data/projects.ts` 배열 방식은 **무효** — 어댑터를 이 구조에 맞게 재작성해야 함. 대상 레포: `Git-Mere/Git-Mere.github.io` `main`.
+
+아래는 새 포트폴리오에서 콘텐츠를 갈아끼우는 위치 전체 맵.
+
+**A. Post Connector가 자동 생성할 대상 (프로젝트별 — 어댑터의 실제 출력)**
+
+| 영역 | 파일 | frontmatter | 본문 |
+|---|---|---|---|
+| Featured Projects (상단 강조 3개) | `content/featured/{프로젝트명}/index.md` | `date`(순서), `title`, `cover`(이미지파일), `github`, `external`, `tech[]` | 프로젝트 설명 |
+| Other Projects (그리드 목록) | `content/projects/{프로젝트명}.md` | `date`, `title`, `github`, `external`, `tech[]`, `company`, `showInProjects`(true/false) | 한두 줄 설명 |
+
+→ Post Connector는 레포 데이터로 **Featured 또는 Other Projects용 마크다운 1개**(frontmatter + 본문)를 생성해 PR로 추가하는 게 핵심 작업. (둘 중 어느 타입을 기본으로 할지는 다음 세션에서 결정.)
+
+**B. 1회성 개인 설정 (수동 — 자동 생성 대상 아님, 참고용 기록)**
+
+| 영역 | 파일 | 수정 대상 |
+|---|---|---|
+| Hero | `src/components/sections/hero.js` | 이름(h2), 한 줄 소개(h3), 소개 본문(p), CTA 버튼 텍스트/링크 |
+| About | `src/components/sections/about.js` | 소개 단락들, `skills` 배열 |
+| Experience | `content/jobs/{회사명}/index.md` (회사마다 하나) | frontmatter: `date,title,company,location,range,url` / 본문: 담당 업무 bullets. 현재 `Apple/Mullen/Scout/Starry/Upstatement` 전부 교체 대상 |
+| Contact | `src/components/sections/contact.js` | 본문 텍스트만(이메일은 `config.js`에서 자동 참조). 선택사항 |
+| 이미지 | `src/images/me.jpg`(프로필), `src/images/logo.png`(로고), `static/resume.pdf`, `static/og.png`(SNS 썸네일), `content/featured/{프로젝트명}/`(Featured 커버) | 파일 교체 |
 
 ---
 
@@ -155,14 +175,18 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 # === 세션 인수인계 (다음 세션 시작점) ===
 
-## 12. 마지막 세션에서 한 일 (2026-06-07)
+## 12. 마지막 세션에서 한 일 (2026-06-08)
 
-1. 노선 확정(로컬 도구) + AI 구독 인증 전환 + `ai-generator.ts` 재작성.
-2. 프롬프트 조립 A안 통일, `generatePrompt()` 제거.
-3. CLI 신규(`pnpm generate <repo-url> [adapter-id]`).
-4. **github-readme 생성 end-to-end 동작 확인됨** (실제 레포로 README 출력 성공).
-5. **github-pages-portfolio 생성 슬라이스 완성** (리뷰 통과, TS 객체 리터럴 콘솔 출력). 이스케이프 버그 2건 수정.
-6. `.env.example` 정리(OAuth앱/Redis 변수 제거).
+1. **포트폴리오 어댑터 전면 재작성** — Gatsby(Brittany Chiang v4) 구조 대응.
+   - AI 출력: `{ title, tech[], description }` JSON
+   - CLI가 frontmatter+md 파일로 조립 (`content/featured/{name}/index.md` or `content/projects/{name}.md`)
+   - `--featured` 플래그로 타입 선택. Featured: 커버 이미지·긴 설명 / Other: 1-2문장·showInProjects
+2. **포트폴리오 게시(PR) 구현** — `src/core/github-publisher.ts` 신규. git tree API로 단일 커밋 PR 생성. `adapter.ts`의 `publish()` 구현 완료.
+3. **`pnpm profile` 커맨드 신규** (`src/cli-profile.ts`) — `profile.json` 기반으로 hero.js·about.js·jobs 수정 PR 자동 생성.
+   - hero.js/about.js: string replacement(이름·tagline·CTA·skills) + AI 생성(intro단락·about단락)
+   - `profile.example.json` 루트에 생성
+   - **실제 PR 생성 확인**: `Git-Mere/git-mere.github.io` PR #1
+4. **`generateRaw()`** `ai-generator.ts`에 추가 — 짧은 서술 텍스트 생성용 (system/user 직접 전달).
 
 ## 13. 현재 상태
 
@@ -173,19 +197,21 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | CLI `pnpm generate` | ✅ |
 | github-readme 생성 | ✅ 동작 확인 |
 | github-readme **게시(PR)** | ❌ 미구현 |
-| github-pages-portfolio 생성 | ✅ (리뷰 통과, **사용자 라이브 확인 전**) |
-| github-pages-portfolio **게시(PR)** | ❌ 미구현 |
+| github-pages-portfolio 생성 (Featured/Other) | ✅ |
+| github-pages-portfolio **게시(PR)** | ✅ 구현 완료 |
+| `pnpm profile` (hero/about/jobs PR) | ✅ 구현·테스트 완료 |
 | 블로그 / LinkedIn / Handshake | ❌ 미착수 |
 | 보충 입력 수집 | ❌ CLI가 빈 `{}` 전달 |
 
-## 14. ⚠️ 다음 세션 주의 — 포트폴리오 구조 변경 예정
-사용자가 **포트폴리오 사이트 구성 자체를 변경할 예정**. 구조가 바뀌면 아래를 점검:
-`github-pages-portfolio/config.json` + `schema.json` + `prompt-base.md` + `src/cli.ts`의 머지·포맷 로직.
+## 14. ✅ 포트폴리오 새 구조 확정됨 (2026-06-07)
+사이트가 Gatsby 구조(Brittany Chiang v4 템플릿 기반)로 교체됨. 상세 구조는 **섹션 8의 "github-pages-portfolio 대상 사이트 구조"** 참조.
 
 ## 15. 다음 할 일 (우선순위)
-1. **(사용자 대기) 포트폴리오 새 구조 확정** → config.json/schema/prompt-base 업데이트
-2. **포트폴리오 게시(2단계)** — `projects.ts` 배열에 TS 객체 삽입 + `Git-Mere.github.io`에 **PR**. (JSON 아닌 TS 소스라 텍스트 삽입 주의: 배열 닫는 `]` 앞 삽입 등)
-3. **README 게시(PR)** — 동일 Octokit PR 패턴 (덮어쓰기 금지, 새 브랜치+PR)
+1. **PR #1 검토 및 string replacement 패턴 검증** — hero.js·about.js 패치가 실제 파일에 올바르게 적용됐는지 확인. 문제 있으면 `patchHeroJs` / `patchAboutJs` 수정.
+2. **7개 프로젝트 실제 실행** — `pnpm generate`로 각 레포 포트폴리오 항목 생성·PR
+   - Featured (--featured): `Settle-Up`, `Where-is-the-question`, `Moris-library` (레포명 확인 필요)
+   - Other: `ladder-chess`, `solar-system`, `simple-graphic-project2`, `garam` (레포명 확인 필요)
+3. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR)
 4. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
 
 ## 16. 실행 방법 (셋업)
@@ -196,11 +222,14 @@ claude setup-token            # 출력 토큰 → .env 의 CLAUDE_CODE_OAUTH_TOK
 #   GITHUB_TOKEN=<fine-grained PAT: Contents R/W, Pull requests R/W, Metadata R>
 #   ANTHROPIC_API_KEY 는 반드시 비워둘 것
 pnpm install
-pnpm generate https://github.com/<owner>/<repo>                        # README
-pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio  # 포트폴리오(콘솔 출력)
+pnpm generate https://github.com/<owner>/<repo>                          # README (stdout)
+pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio   # Other 포트폴리오 PR
+pnpm generate https://github.com/<owner>/<repo> github-pages-portfolio --featured  # Featured PR
+pnpm profile profile.example.json                                        # 프로필 섹션 PR
 pnpm typecheck
 ```
 
 ## 17. 남은 부채
-- `package.json`에 `bullmq`, `ioredis` 잔존(큐 안 씀 → 정리 가능). `src/core/publish-queue.ts`는 스텁 — BullMQ 안 쓰는 방향으로 재작성/제거 예정.
+- `package.json`에 `bullmq`, `ioredis` 잔존(큐 안 씀 → 정리 가능). `src/core/publish-queue.ts`는 스텁 — 제거 예정.
 - `src/api/server.ts`는 `/health`만 있는 스텁 (웹 UI 보류).
+- `patchHeroJs` / `patchAboutJs` string replacement 패턴이 hero.js·about.js 실제 현재 내용에 의존 — PR #1 검토 후 패턴 안정성 확인 필요.
