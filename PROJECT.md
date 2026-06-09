@@ -2,7 +2,7 @@
 
 > 프로젝트 스펙 + 설계 결정 + 세션 진행 상황을 담은 **단일 프로젝트 문서**입니다.
 > Claude의 작업 방식(디렉터/코더/리뷰어 팀)은 **[CLAUDE.md](./CLAUDE.md)** 참고.
-> 마지막 업데이트: 2026-06-08
+> 마지막 업데이트: 2026-06-09
 
 ---
 
@@ -178,17 +178,28 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 # === 세션 인수인계 (다음 세션 시작점) ===
 
-## 12. 마지막 세션에서 한 일 (2026-06-08)
+## 12. 마지막 세션에서 한 일
+
+### 2026-06-09 세션
+
+1. **프로필 수정 기능(`pnpm profile`) 제거** — 스코프를 "포트폴리오 프로젝트 항목 생성·게시"로 환원 (커밋 `d89f25a`).
+   - 삭제: `src/cli-profile.ts`, `profile.example.json`
+   - 수정: `package.json` profile 스크립트 제거, `ai-generator.ts`의 `generateRaw()` 제거(해당 기능 전용 함수)
+   - 이유: 개인 프로필 섹션(hero/about/jobs)은 일반화 어렵고 1회성 → 대상 레포에서 직접 Claude로 작업하는 방침 (섹션 8-B). 리뷰어 APPROVED, typecheck 통과.
+   - 지난 세션 `pnpm profile`이 만든 PR #1 "Update profile sections"는 이미 main에 merge돼 있었음(닫을 것 없음). 머지된 내용은 추후 레포에서 직접 검토·수정.
+2. **7개 프로젝트 포트폴리오 PR 실제 생성** — `pnpm generate ... github-pages-portfolio`로 `Git-Mere/git-mere.github.io` main 대상 PR 7건. 각 브랜치 `post-connector/{repo}-2026-06-09`.
+   - Other(4): `Solar_system`→PR#2, `Ladder-chess`→#3, `simple-graphic-project2`→#4, `Garam`→#5
+   - Featured(4 → `--featured`): `Settle_Up`→#6, `Where_is_the_question`→#7, `Mori-s-library`→#8
+   - 생성 품질 양호(tech 추출·설명 정확). **PR들은 아직 미머지 — 사용자 검토 대기.**
+   - ⚠️ **Featured(#6–#8) 머지 전 커버 이미지 필요**: frontmatter가 `cover: ./cover.png`(어댑터 하드코딩, `cli.ts:33`)를 참조하나 PR엔 이미지 없음. 각 `content/featured/{repo}/`에 이미지 추가 필요. 파일명은 **`cover.png`일 필요 없음** — frontmatter `cover:` 값이 실존 이미지 파일을 가리키기만 하면 됨(기존 항목 예: `./halcyon.png`, `./demo.png`). 현재 출력에 맞추려면 `cover.png`로 두는 게 간단. Other(#2–#5)는 커버 없어 그대로 머지 가능.
+
+### 2026-06-08 세션
 
 1. **포트폴리오 어댑터 전면 재작성** — Gatsby(Brittany Chiang v4) 구조 대응.
    - AI 출력: `{ title, tech[], description }` JSON
    - CLI가 frontmatter+md 파일로 조립 (`content/featured/{name}/index.md` or `content/projects/{name}.md`)
    - `--featured` 플래그로 타입 선택. Featured: 커버 이미지·긴 설명 / Other: 1-2문장·showInProjects
 2. **포트폴리오 게시(PR) 구현** — `src/core/github-publisher.ts` 신규. git tree API로 단일 커밋 PR 생성. `adapter.ts`의 `publish()` 구현 완료.
-3. **프로필 수정 기능(`pnpm profile`) 제거** — 스코프 환원 결정에 따라 hero/about/jobs 패치 기능을 전부 제거.
-   - 삭제: `src/cli-profile.ts`, `profile.example.json`
-   - 수정: `package.json` profile 스크립트 제거, `ai-generator.ts`의 `generateRaw()` 제거(해당 기능 전용 함수)
-   - 이유: 개인 프로필 섹션은 일반화 어렵고 1회성 → 대상 레포에서 직접 Claude로 작업하는 방침으로 전환 (섹션 8-B 참조). 리뷰어 APPROVED, `pnpm typecheck` 통과.
 
 ## 13. 현재 상태
 
@@ -201,6 +212,7 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | github-readme **게시(PR)** | ❌ 미구현 |
 | github-pages-portfolio 생성 (Featured/Other) | ✅ |
 | github-pages-portfolio **게시(PR)** | ✅ 구현 완료 |
+| 7개 프로젝트 PR 생성 | ✅ 생성 완료 (PR#2–#8, **미머지 — 검토 대기**) |
 | 프로필 섹션(hero/about/jobs) 수정 | ❌ 범위 밖 — 레포에서 직접 작업 (기능 제거됨) |
 | 블로그 / LinkedIn / Handshake | ❌ 미착수 |
 | 보충 입력 수집 | ❌ CLI가 빈 `{}` 전달 |
@@ -209,10 +221,8 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 사이트가 Gatsby 구조(Brittany Chiang v4 템플릿 기반)로 교체됨. 상세 구조는 **섹션 8의 "github-pages-portfolio 대상 사이트 구조"** 참조.
 
 ## 15. 다음 할 일 (우선순위)
-1. **7개 프로젝트 실제 실행** — `pnpm generate`로 각 레포 포트폴리오 항목 생성·PR
-   - Featured (--featured): `Settle-Up`, `Where-is-the-question`, `Moris-library` (레포명 확인 필요)
-   - Other: `ladder-chess`, `solar-system`, `simple-graphic-project2`, `garam` (레포명 확인 필요)
-2. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR)
+1. **7개 PR(#2–#8) 검토·머지** — Other(#2–#5)는 바로 머지 가능. Featured(#6–#8)는 각 `content/featured/{repo}/`에 커버 이미지 추가 후 머지(파일명 자유, frontmatter `cover:`와 일치만 하면 됨). 내용 어색한 항목 있으면 PR close 후 재생성.
+2. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR). `github-publisher.ts` 재활용 가능.
 3. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
 
 ## 16. 실행 방법 (셋업)
