@@ -180,6 +180,20 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 ## 12. 마지막 세션에서 한 일
 
+### 2026-06-10 세션
+
+1. **README 게시(PR) 구현** — `github-readme` 어댑터 `publish()` + CLI `--publish` 플래그. `github-publisher.ts` 재활용.
+2. **batch-cli 구현** — `src/batch-cli.ts` + `pnpm batch-portfolio <config.json>`. 여러 레포를 단일 PR로 묶어 게시.
+3. **9개 프로젝트 배치 PR 생성** — `batch.json`으로 `git-mere.github.io` 대상 PR #10 생성 (단일 PR에 9파일).
+   - Featured(3): `Settle_Up`, `Where_is_the_question`, `Mori-s-library`
+   - Other(6): `Solar_system`, `Amidar-Master-Copy`, `Ladder-chess`, `simple-graphic-project2`, `simple-graphic-project`, `Garam`
+   - ⚠️ Featured 3개는 머지 전 커버 이미지 필요 (`content/featured/{repo}/cover.png`)
+4. **README B 구조 + 인터랙티브 입력 구현** — 리서치(유명 개발자 패턴 + 리크루터 관점) 기반으로 구조 확정.
+   - 구조: Features / Demo / Built With(이유 포함) / Getting Started / What I Learned / License
+   - CLI가 TTY일 때 2개 질문 프롬프트 (`만든 이유`, `어려웠던 점·배운 것`)
+   - 비-TTY(파이프/스크립트)에서는 프롬프트 건너뜀 → GitHub 데이터만으로 생성
+5. **Bet-Game README PR #2 생성** — 새 B 구조 적용, 사용자 입력 없이도 코드 구조에서 What I Learned 추론 확인.
+
 ### 2026-06-09 세션
 
 1. **프로필 수정 기능(`pnpm profile`) 제거** — 스코프를 "포트폴리오 프로젝트 항목 생성·게시"로 환원 (커밋 `d89f25a`).
@@ -208,22 +222,24 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | GitHub 수집 (`github-fetcher.ts`) | ✅ |
 | ai-generator (구독 query) | ✅ |
 | CLI `pnpm generate` | ✅ |
-| github-readme 생성 | ✅ 동작 확인 |
-| github-readme **게시(PR)** | ❌ 미구현 |
+| github-readme 생성 (B 구조) | ✅ |
+| github-readme **게시(PR)** | ✅ (`--publish` 플래그) |
 | github-pages-portfolio 생성 (Featured/Other) | ✅ |
-| github-pages-portfolio **게시(PR)** | ✅ 구현 완료 |
-| 7개 프로젝트 PR 생성 | ✅ 생성 완료 (PR#2–#8, **미머지 — 검토 대기**) |
-| 프로필 섹션(hero/about/jobs) 수정 | ❌ 범위 밖 — 레포에서 직접 작업 (기능 제거됨) |
+| github-pages-portfolio **게시(PR)** | ✅ |
+| batch-portfolio (단일 PR에 여러 프로젝트) | ✅ |
+| 포트폴리오 PR #10 (9개 프로젝트) | ✅ 생성 완료 (**미머지 — Featured 3개 커버 이미지 필요**) |
+| 보충 입력 수집 (인터랙티브 프롬프트) | ✅ TTY에서 2개 질문 |
+| 프로필 섹션(hero/about/jobs) 수정 | ❌ 범위 밖 — 레포에서 직접 작업 |
 | 블로그 / LinkedIn / Handshake | ❌ 미착수 |
-| 보충 입력 수집 | ❌ CLI가 빈 `{}` 전달 |
+| 웹 UI | ❌ 미착수 |
 
 ## 14. ✅ 포트폴리오 새 구조 확정됨 (2026-06-07)
 사이트가 Gatsby 구조(Brittany Chiang v4 템플릿 기반)로 교체됨. 상세 구조는 **섹션 8의 "github-pages-portfolio 대상 사이트 구조"** 참조.
 
 ## 15. 다음 할 일 (우선순위)
-1. **7개 PR(#2–#8) 검토·머지** — Other(#2–#5)는 바로 머지 가능. Featured(#6–#8)는 각 `content/featured/{repo}/`에 커버 이미지 추가 후 머지(파일명 자유, frontmatter `cover:`와 일치만 하면 됨). 내용 어색한 항목 있으면 PR close 후 재생성.
-2. **README 게시(PR)** — `github-readme` 어댑터에 `publish()` 추가 (Octokit, 덮어쓰기 금지, 새 브랜치+PR). `github-publisher.ts` 재활용 가능.
-3. (이후) 블로그 어댑터, 보충 입력 CLI 옵션, 웹 UI
+1. **포트폴리오 PR #10 검토·머지** — Other(6개)는 바로 머지 가능. Featured(Settle_Up, Where_is_the_question, Mori-s-library)는 각 `content/featured/{repo}/`에 커버 이미지 추가 후 머지.
+2. **나머지 개인 레포 README PR 생성** — `pnpm generate <url> --publish`로 레포별 README 생성.
+3. (이후) 블로그 어댑터, LinkedIn/Handshake, 웹 UI
 
 ## 16. 실행 방법 (셋업)
 ```bash
