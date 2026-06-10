@@ -116,7 +116,7 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 |---|---|---|
 | GitHub README | 자동 (PR/새 브랜치, **덮어쓰기 금지**) | 생성 ✅ / 게시 ❌ |
 | GitHub Pages 포트폴리오 | 자동 (PR) | ⚠️ 사이트 구조 교체됨 → 어댑터 재작성 필요 (아래 참조) |
-| GitHub Pages 블로그 | 자동 (push) — Jekyll `_posts/YYYY-MM-DD-slug.md` | 미착수 |
+| GitHub Pages 블로그 | — | ❌ 범위 밖 — 사용자가 직접 운용 |
 | LinkedIn | 복붙 (~1300자, 해시태그, 플레인텍스트) | 미착수 |
 | Handshake | 복붙 (제목/설명/스킬/링크) | 미착수 |
 

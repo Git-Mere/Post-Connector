@@ -13,8 +13,14 @@ const adapter: PlatformAdapter = {
     maxLength: 3000,
   },
 
-  validate(_content: string): ValidationResult {
-    throw new Error('linkedin-post.validate: not implemented');
+  validate(content: string): ValidationResult {
+    if (content.trim().length === 0) {
+      return { ok: false, errors: ['Generated post is empty'] };
+    }
+    if (content.length > 3000) {
+      return { ok: false, errors: [`Post exceeds LinkedIn 3000 character limit (${content.length} chars)`] };
+    }
+    return { ok: true, errors: [] };
   },
 };
 

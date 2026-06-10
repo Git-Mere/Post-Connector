@@ -106,7 +106,7 @@ async function main(): Promise<void> {
   const globalPromise = getGlobalInstructions();
 
   let userInput: UserEnrichment = {};
-  if (adapterId === 'github-readme') {
+  if (adapterId === 'github-readme' || adapterId === 'linkedin-post') {
     userInput = await promptUserEnrichment();
   }
 
