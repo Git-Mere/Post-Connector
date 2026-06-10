@@ -1,7 +1,9 @@
 import 'dotenv/config';
+import { createInterface } from 'node:readline/promises';
 import { fetchProjectData } from './core/github-fetcher.js';
 import { getAdapter, getGlobalInstructions } from './core/adapter-registry.js';
 import { generateContent } from './core/ai-generator.js';
+import type { UserEnrichment } from './types.js';
 
 function parseGithubUrl(raw: string): { owner: string; repo: string } {
   // Accept https://github.com/owner/repo or owner/repo
@@ -55,6 +57,22 @@ function buildPortfolioMarkdown(opts: {
   }
 }
 
+async function promptUserEnrichment(): Promise<UserEnrichment> {
+  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  const ask = async (q: string): Promise<string> => (await rl.question(q)).trim();
+
+  process.stderr.write('\n--- 프로젝트 정보 (Enter로 건너뛰기) ---\n');
+  const problemSolved = await ask('만든 이유 / 해결한 문제: ');
+  const learnings    = await ask('어려웠던 점 / 배운 것 (구체적일수록 좋음): ');
+  rl.close();
+  process.stderr.write('\n');
+
+  return {
+    ...(problemSolved && { problemSolved }),
+    ...(learnings    && { learnings }),
+  };
+}
+
 async function main(): Promise<void> {
   const rawUrl = process.argv[2];
   if (!rawUrl) {
@@ -81,10 +99,17 @@ async function main(): Promise<void> {
     throw new Error(`adapter not found: ${adapterId}`);
   }
 
-  const [data, globalInstructions] = await Promise.all([
-    fetchProjectData({ owner, repo, token, userInput: {} }),
-    getGlobalInstructions(),
-  ]);
+  // github-readme일 때만 GitHub fetch와 병렬로 사용자 입력 수집
+  const fetchPromise  = fetchProjectData({ owner, repo, token, userInput: {} });
+  const globalPromise = getGlobalInstructions();
+
+  let userInput: UserEnrichment = {};
+  if (adapterId === 'github-readme') {
+    userInput = await promptUserEnrichment();
+  }
+
+  const [data, globalInstructions] = await Promise.all([fetchPromise, globalPromise]);
+  Object.assign(data.userInput, userInput);
 
   const typeInstruction = adapterId === 'github-pages-portfolio'
     ? (isFeatured ? 'Output type: featured' : 'Output type: other')
