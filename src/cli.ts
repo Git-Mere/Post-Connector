@@ -58,6 +58,8 @@ function buildPortfolioMarkdown(opts: {
 }
 
 async function promptUserEnrichment(): Promise<UserEnrichment> {
+  if (!process.stdin.isTTY) return {};
+
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   const ask = async (q: string): Promise<string> => (await rl.question(q)).trim();
 
