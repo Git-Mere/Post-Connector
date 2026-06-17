@@ -2,7 +2,7 @@
 
 > 프로젝트 스펙 + 설계 결정 + 세션 진행 상황을 담은 **단일 프로젝트 문서**입니다.
 > Claude의 작업 방식(디렉터/코더/리뷰어 팀)은 **[CLAUDE.md](./CLAUDE.md)** 참고.
-> 마지막 업데이트: 2026-06-09
+> 마지막 업데이트: 2026-06-16
 
 ---
 
@@ -180,6 +180,16 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 ## 12. 마지막 세션에서 한 일
 
+### 2026-06-16 세션
+
+1. **개인 레포 7개 README PR 생성** — `pnpm generate <url> --publish`로 7건 게시. 기존 README + 파일 트리 참고해 B 구조로 생성, 새 브랜치 PR(덮어쓰기 없음).
+   - 최종(모두 영어): `Garam`#2, `simple-graphic-project`#2, `Solar_system`#2, `Amidar-Master-Copy`#3, `simple-graphic-project2`#1, `Mori-s-library`#1, `Ladder-chess`#1
+   - **언어 일관성 수정**: 1차 생성 시 일부가 한국어로 나옴(원인: `global-instructions.md`의 "## 언어"가 "기존 README 언어 기준"으로 작성하게 함). → `github-readme/instructions.md`에 "## 언어" override 추가(**항상 영어**, global보다 우선) + `prompt-base.md`에도 영어 규칙. 한국어로 나온 4개는 브랜치 삭제 후 영어로 재게시(이전 한국어 PR은 자동 close).
+   - ⚠️ **포트폴리오 PR #10은 사용자가 이미 검토·적용 완료** (이번 세션에서 머지 확인 불필요).
+2. **Post-Connector 자체 README 작성(직접) + main 커밋(`6a41e0c`)** — 루트에 README 없었음. 툴 자동 생성은 부정확(아래 부채 원인)해서 PROJECT.md 기반으로 직접 작성, 모든 주장 코드로 검증. 영어.
+3. **죽은 코드/의존성 정리(`a1428bd`)** — §17 부채 해소. `src/core/publish-queue.ts`(BullMQ 스텁)·`src/api/server.ts`(Fastify `/health` 스텁)·`src/api/` 삭제, `bullmq`/`ioredis`/`fastify` deps + `dev`/`start` 스크립트 + `main` 필드 + `.env.example`의 `PORT` 제거. `tsc --noEmit` 통과. 코더→리뷰어 APPROVED.
+   - ⚠️ `pnpm-lock.yaml`은 아직 제거된 deps 참조 — 이 환경에 pnpm 없어 재생성 불가. **pnpm 가능 시 `pnpm install`로 동기화 필요.**
+
 ### 2026-06-10 세션
 
 1. **README 게시(PR) 구현** — `github-readme` 어댑터 `publish()` + CLI `--publish` 플래그. `github-publisher.ts` 재활용.
@@ -230,16 +240,18 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 | 포트폴리오 PR #10 (9개 프로젝트) | ✅ 생성 완료 (**미머지 — Featured 3개 커버 이미지 필요**) |
 | 보충 입력 수집 (인터랙티브 프롬프트) | ✅ TTY에서 2개 질문 |
 | 프로필 섹션(hero/about/jobs) 수정 | ❌ 범위 밖 — 레포에서 직접 작업 |
-| 블로그 / LinkedIn / Handshake | ❌ 미착수 |
-| 웹 UI | ❌ 미착수 |
+| linkedin-post 생성 (복붙 모드) | ✅ 어댑터 구현 (커밋 `8c03152`) |
+| 블로그 / Handshake | ❌ 미착수 (블로그는 범위 밖) |
+| 웹 UI | ❌ 미착수 (server 스텁 제거됨) |
 
 ## 14. ✅ 포트폴리오 새 구조 확정됨 (2026-06-07)
 사이트가 Gatsby 구조(Brittany Chiang v4 템플릿 기반)로 교체됨. 상세 구조는 **섹션 8의 "github-pages-portfolio 대상 사이트 구조"** 참조.
 
 ## 15. 다음 할 일 (우선순위)
-1. **포트폴리오 PR #10 검토·머지** — Other(6개)는 바로 머지 가능. Featured(Settle_Up, Where_is_the_question, Mori-s-library)는 각 `content/featured/{repo}/`에 커버 이미지 추가 후 머지.
-2. **나머지 개인 레포 README PR 생성** — `pnpm generate <url> --publish`로 레포별 README 생성.
-3. (이후) 블로그 어댑터, LinkedIn/Handshake, 웹 UI
+1. ✅ (완료) 포트폴리오 PR #10 — 사용자가 검토·적용 완료.
+2. ✅ (완료) 개인 레포 7개 README PR 생성·게시 (모두 영어). 사용자 검토·머지 대기.
+3. **`pnpm install` 1회** — 정리된 deps로 `pnpm-lock.yaml` 동기화 (§17).
+4. (이후) LinkedIn 게시 흐름(복붙 UI), Handshake 어댑터, 웹 UI
 
 ## 16. 실행 방법 (셋업)
 ```bash
@@ -256,5 +268,4 @@ pnpm typecheck
 ```
 
 ## 17. 남은 부채
-- `package.json`에 `bullmq`, `ioredis` 잔존(큐 안 씀 → 정리 가능). `src/core/publish-queue.ts`는 스텁 — 제거 예정.
-- `src/api/server.ts`는 `/health`만 있는 스텁 (웹 UI 보류).
+- ✅ (2026-06-16 해소) `bullmq`/`ioredis`/`fastify` deps, `publish-queue.ts`·`api/server.ts` 스텁 제거. 단 `pnpm-lock.yaml`은 아직 미동기화 → **`pnpm install` 1회 필요**.
