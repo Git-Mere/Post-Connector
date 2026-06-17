@@ -249,9 +249,22 @@ README(.md/.rst), 언어 분포, 레포 메타(설명/토픽/스타/라이선스
 
 ## 15. 다음 할 일 (우선순위)
 1. ✅ (완료) 포트폴리오 PR #10 — 사용자가 검토·적용 완료.
-2. ✅ (완료) 개인 레포 7개 README PR 생성·게시 (모두 영어). 사용자 검토·머지 대기.
-3. **`pnpm install` 1회** — 정리된 deps로 `pnpm-lock.yaml` 동기화 (§17).
-4. (이후) LinkedIn 게시 흐름(복붙 UI), Handshake 어댑터, 웹 UI
+2. ✅ (완료) 개인 레포 7개 README PR — 모두 영어로 생성·게시, **사용자가 전부 머지 적용 완료**.
+3. **➡️ 다음 세션: 웹 UI 착수** (아래 §18 참조).
+4. **`pnpm install` 1회** — 정리된 deps로 `pnpm-lock.yaml` 동기화 (§17). 웹 UI 의존성 추가 전에 먼저.
+5. (이후) LinkedIn 게시 흐름(복붙 UI), Handshake 어댑터.
+
+## 18. 다음 세션 시작점 — 웹 UI
+
+> 현황: CLI(`pnpm generate`)로 README·포트폴리오·LinkedIn 생성+PR 게시까지 동작. 이제 같은 코어를 감싸는 웹 UI를 붙인다. 이전 `src/api/server.ts`(Fastify `/health` 스텁)는 2026-06-16에 제거됨 → **백엔드는 새로 시작.**
+
+**착수 전 사용자와 정할 것 (추측 금지):**
+- 스택: API 서버(예: Fastify/Express/Next API route) + 프런트(예: Next.js/Vite+React) 조합. 로컬 전용 단일 사용자 도구라는 전제 유지.
+- 범위(MVP): 최소한 "레포 URL 입력 → 어댑터 선택 → 생성 결과 미리보기 → (게시 가능한 건) PR 버튼". 복붙 어댑터(LinkedIn 등)는 클립보드 복사 UI.
+- 인증 처리: 토큰은 서버 측 `.env`에서만 읽고 브라우저로 노출 금지. `CLAUDE_CODE_OAUTH_TOKEN`/`GITHUB_TOKEN` 서버 보관.
+- 기존 인터랙티브 입력(만든 이유/배운 점)을 웹 폼으로 옮길지.
+
+**재사용할 코어 (그대로 호출):** `core/github-fetcher`, `core/ai-generator`, `core/adapter-registry`, `core/github-publisher`, 어댑터들. 코어는 CLI/웹 공용 — 비즈니스 로직을 서버 핸들러에 중복 구현하지 말 것.
 
 ## 16. 실행 방법 (셋업)
 ```bash
