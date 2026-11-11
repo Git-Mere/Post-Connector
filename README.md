@@ -6,6 +6,12 @@ Turn one GitHub repo into ready-to-post content for every platform — and publi
 
 A local CLI that reads a GitHub repository, uses Claude to write platform-specific content (GitHub README, GitHub Pages portfolio entry, LinkedIn post), and opens a pull request where publishing can be automated. Built to kill the repetitive chore of rewriting the same project announcement for every platform after finishing a project.
 
+## Highlights
+
+- Used it to open 27 pull requests across 12 repositories, 19 merged
+- Core/adapter contract: adding LinkedIn changed 0 core lines and 1 CLI line
+- Never writes to the default branch: every generated file goes out as a single-commit pull request on a fresh dated branch
+
 ## Features
 
 - **Modular adapters** — each platform is one folder. Adding a platform means adding a directory, not editing the core.
